@@ -4,33 +4,20 @@
 #include <stdint.h>
 
 
-typedef __signed__ char __s8;
 typedef unsigned char __u8;
-
-typedef __signed__ short __s16;
 typedef unsigned short __u16;
-
-typedef __signed__ int __s32;
-typedef unsigned int __u32;
-
-#ifdef __GNUC__
-__extension__ typedef __signed__ long long __s64;
-__extension__ typedef unsigned long long __u64;
-#else
-typedef __signed__ long long __s64;
-typedef unsigned long long __u64;
-#endif
+typedef unsigned long __u32;
 
 
 /* special address description flags for the CAN_ID */
-#define CAN_EFF_FLAG 0x80000000U /* EFF/SFF is set in the MSB */
-#define CAN_RTR_FLAG 0x40000000U /* remote transmission request */
-#define CAN_ERR_FLAG 0x20000000U /* error message frame */
+#define CAN_EFF_FLAG 0x80000000UL /* EFF/SFF is set in the MSB */
+#define CAN_RTR_FLAG 0x40000000UL /* remote transmission request */
+#define CAN_ERR_FLAG 0x20000000UL /* error message frame */
 
 /* valid bits in CAN ID for frame formats */
-#define CAN_SFF_MASK 0x000007FFU /* standard frame format (SFF) */
-#define CAN_EFF_MASK 0x1FFFFFFFU /* extended frame format (EFF) */
-#define CAN_ERR_MASK 0x1FFFFFFFU /* omit EFF, RTR, ERR flags */
+#define CAN_SFF_MASK 0x000007FFUL /* standard frame format (SFF) */
+#define CAN_EFF_MASK 0x1FFFFFFFUL /* extended frame format (EFF) */
+#define CAN_ERR_MASK 0x1FFFFFFFUL /* omit EFF, RTR, ERR flags */
 
 /*
  * Controller Area Network Identifier structure

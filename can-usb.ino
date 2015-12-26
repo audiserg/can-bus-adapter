@@ -16,7 +16,7 @@ void serialOutputCallback(const char *str);
 void canOutputCallback(const struct can_frame *frame);
 
 CanHacker canHacker(serialOutputCallback, canOutputCallback);
-MCP_CAN CAN(SPI_CS_PIN);
+MCP_CAN mcp2551(SPI_CS_PIN, MODE_LOOPBACK);
 
 char commandBuffer[COMMAND_MAX_LENGTH + 2];  // command buffer
 int commandBufferIndex = 0;
@@ -33,7 +33,7 @@ void stopAndBlink(void) {
 
 void setup() {
     Serial.begin(115200);
-    CAN.begin(CAN_125KBPS);
+    mcp2551.begin(CAN_125KBPS);
     //  attachInterrupt(0, MCP2515_ISR, FALLING); // start interrupt
     pinMode(LED_PIN, OUTPUT); 
     digitalWrite(LED_PIN, LOW);
@@ -48,12 +48,20 @@ void loop() {
         processChar(Serial.read());
     }*/
   
-    if (CAN_MSGAVAIL == CAN.checkReceive()) {
+    if (CAN_MSGAVAIL == mcp2551.checkReceive()) {
         struct can_frame frame;
-        if (CAN.readMsgBuf(&frame.can_dlc, frame.data) != CAN_OK) {
+        if (mcp2551.readMsgBuf(&frame.can_dlc, frame.data) != CAN_OK) {
             stopAndBlink();
         }
-        frame.can_id = CAN.getCanId();
+        canid_t id = mcp2551.getCanId();
+        if (mcp2551.isRemoteRequest()) {
+            id |= CAN_RTR_FLAG;
+        }
+        if (mcp2551.isExtendedFrame()) {
+            id |= CAN_EFF_FLAG;
+        }
+        
+        frame.can_id = id;
         
         if (canHacker.receiveCanFrame(&frame) != CANHACKER_OK) {
             stopAndBlink();
@@ -100,8 +108,8 @@ void canOutputCallback(const struct can_frame *frame) {
     INT8U isExtended = frame->can_id & CAN_EFF_FLAG ? 1 : 0;
     INT8U isRTR = frame->can_id & CAN_RTR_FLAG ? 1 : 0;
     canid_t id = frame->can_id & (isExtended ? CAN_EFF_MASK : CAN_SFF_MASK);
-
-    if (CAN.sendMsgBuf(id, isExtended, isRTR, frame->can_dlc, frame->data) != CAN_OK) {
+    
+    if (mcp2551.sendMsgBuf(id, isExtended, isRTR, frame->can_dlc, frame->data) != CAN_OK) {
         stopAndBlink();
     }
 }

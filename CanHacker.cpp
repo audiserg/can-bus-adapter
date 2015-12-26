@@ -139,7 +139,7 @@ int CanHacker::parseTransmit(const char *buffer, int length, struct can_frame *f
             return CANHACKER_ERROR;
 
     }
-
+    
     int offset = 1;
 
     canid_t id = 0;
@@ -177,12 +177,10 @@ int CanHacker::createTransmit(const struct can_frame *frame, char *buffer, const
     int offset;
     int len = frame->can_dlc;
 
-    int isRTR = frame->can_id & CAN_RTR_FLAG;
-
+    int isRTR = frame->can_id & CAN_RTR_FLAG ? 1 : 0;
+    
     if (frame->can_id & CAN_ERR_FLAG) {
-        buffer[0] = isRTR ? 'R' : 'T';
-        put_eff_id(buffer+1, frame->can_id & (CAN_ERR_MASK|CAN_ERR_FLAG));
-        offset = 9;
+        return CANHACKER_ERROR;
     } else if (frame->can_id & CAN_EFF_FLAG) {
         buffer[0] = isRTR ? 'R' : 'T';
         put_eff_id(buffer+1, frame->can_id & CAN_EFF_MASK);
@@ -205,6 +203,6 @@ int CanHacker::createTransmit(const struct can_frame *frame, char *buffer, const
 
     buffer[offset++] = CANHACKER_CR;
     buffer[offset] = '\0';
-
-    return 0;
+    
+    return CANHACKER_OK;
 }
