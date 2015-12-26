@@ -22,12 +22,13 @@ char commandBuffer[COMMAND_MAX_LENGTH + 2];  // command buffer
 int commandBufferIndex = 0;
 
 void stopAndBlink(void) {
-    while (1) {
+    digitalWrite(LED_PIN, HIGH);
+    /*while (1) {
         digitalWrite(LED_PIN, HIGH);
         delay(500);
         digitalWrite(LED_PIN, LOW);
         delay(500);
-    }
+    }*/
 }
 
 void setup() {
@@ -96,7 +97,11 @@ void serialOutputCallback(const char *str) {
 }
 
 void canOutputCallback(const struct can_frame *frame) {
-    if (CAN.sendMsgBuf(frame->can_id, 0, frame->can_dlc, frame->data) != CAN_OK) {
+    INT8U isExtended = frame->can_id & CAN_EFF_FLAG ? 1 : 0;
+    INT8U isRTR = frame->can_id & CAN_RTR_FLAG ? 1 : 0;
+    canid_t id = frame->can_id & (isExtended ? CAN_EFF_MASK : CAN_SFF_MASK);
+
+    if (CAN.sendMsgBuf(id, isExtended, isRTR, frame->can_dlc, frame->data) != CAN_OK) {
         stopAndBlink();
     }
 }
