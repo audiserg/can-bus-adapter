@@ -34,89 +34,144 @@ static inline void _put_id(char *buf, int end_offset, canid_t id)
 #define put_sff_id(buf, id) _put_id(buf, 2, id)
 #define put_eff_id(buf, id) _put_id(buf, 7, id)
 
-CanHacker::CanHacker (SerialOutputCallbackType vSerialOutputCallback, CanOutputCallbackType vCanOutputCallback)
-{
-    serialOutputCallback = vSerialOutputCallback;
-    canOutputCallback = vCanOutputCallback;
+CanHackerLineReader::CanHackerLineReader(CanHacker *vCanHacker) {
+    canHacker = vCanHacker;
+    index = 0;
 }
 
-CanHacker::~CanHacker ()
-{
-
+CANHACKER_ERROR CanHackerLineReader::processChar(char rxChar) {
+    switch (rxChar) {
+        case '\r':
+        case '\n':
+            if (index > 0) {
+                buffer[index] = '\0';
+            
+                CANHACKER_ERROR error = canHacker->receiveCommand(buffer, index);
+                if (error != CANHACKER_ERROR_OK) {
+                    return error;
+                }
+                index = 0;
+            }
+            break;
+  
+        case '\0':
+            break;
+  
+        default:
+            if (index < COMMAND_MAX_LENGTH) {
+              buffer[index++] = rxChar;
+            }
+            break;
+    }
+    return CANHACKER_ERROR_OK;
 }
 
-void CanHacker::canOutput(const struct can_frame *frame) {
-    canOutputCallback(frame);
-}
-
-void CanHacker::serialOutput(const char *str) {
-    serialOutputCallback(str);
-}
-
-void CanHacker::serialOutput(const char character) {
+CANHACKER_ERROR CanHacker::writeSerial(const char character) {
     char str[2];
     str[0] = character;
     str[1] = '\0';
-    serialOutput(str);
+    return writeSerial(str);
 }
 
-int CanHacker::receiveCommand(const char *buffer, const int length) {
+CANHACKER_ERROR CanHacker::receiveCommand(const char *buffer, const int length) {
     switch (buffer[0]) {
-        case CANHACKER_GET_SERIAL:
-            serialOutput(CANHACKER_SERIAL_RESPONSE);
-            return CANHACKER_OK;
+        case CANHACKER_GET_SERIAL: {
+            writeSerial(CANHACKER_SERIAL_RESPONSE);
+            return CANHACKER_ERROR_OK;
+        }
 
-        case CANHACKER_GET_SW_VERSION:
-            serialOutput(CANHACKER_SW_VERSION_RESPONSE);
-            return CANHACKER_OK;
+        case CANHACKER_GET_SW_VERSION: {
+            writeSerial(CANHACKER_SW_VERSION_RESPONSE);
+            return CANHACKER_ERROR_OK;
+        }
 
-        case CANHACKER_GET_VERSION:
-            serialOutput(CANHACKER_VERSION_RESPONSE);
-            return CANHACKER_OK;
+        case CANHACKER_GET_VERSION: {
+            writeSerial(CANHACKER_VERSION_RESPONSE);
+            return CANHACKER_ERROR_OK;
+        }
 
         case CANHACKER_SEND_11BIT_ID:
         case CANHACKER_SEND_29BIT_ID:
         case CANHACKER_SEND_R11BIT_ID:
-        case CANHACKER_SEND_R29BIT_ID:
-            struct can_frame frame;
-            if (parseTransmit(buffer, length, &frame) == CANHACKER_ERROR) {
-                return CANHACKER_ERROR;
+        case CANHACKER_SEND_R29BIT_ID: {
+            if (!isConnected()) {
+                return CANHACKER_ERROR_NOT_CONNECTED;
             }
-            canOutput(&frame);
+            struct can_frame frame;
+            CANHACKER_ERROR error = parseTransmit(buffer, length, &frame);
+            if (error == CANHACKER_ERROR_OK) {
+                return error;
+            }
+            writeCan(&frame);
 
-            serialOutput(CANHACKER_CR);
-            return CANHACKER_OK;
+            writeSerial(CANHACKER_CR);
+            return CANHACKER_ERROR_OK;
+        }
 
-        case CANHACKER_CLOSE_CAN_CHAN:
-        case CANHACKER_OPEN_CAN_CHAN:
+        case CANHACKER_CLOSE_CAN_CHAN: {
+            if (!isConnected()) {
+                writeSerial(CANHACKER_BEL);
+                return CANHACKER_ERROR_OK;
+            }
+            disconnectCan();
+            writeSerial(CANHACKER_CR);
+            return CANHACKER_ERROR_OK;
+        }
+            
+        case CANHACKER_OPEN_CAN_CHAN: {
+            connectCan();
+            writeSerial(CANHACKER_CR);
+            return CANHACKER_ERROR_OK;
+        }
+            
         case CANHACKER_SET_BITRATE:
         case CANHACKER_SET_BTR:
-        case CANHACKER_LISTEN_ONLY:
-        case CANHACKER_WRITE_REG:
-        case CANHACKER_TIME_STAMP:
         case CANHACKER_SET_ACR:
         case CANHACKER_SET_AMR:
+        case CANHACKER_LISTEN_ONLY: {
+            if (isConnected()) {
+                writeSerial(CANHACKER_BEL);
+                return CANHACKER_ERROR_CONNECTED;
+            }
+            writeSerial(CANHACKER_CR);
+            return CANHACKER_ERROR_OK;
+        }
+        
+        case CANHACKER_TIME_STAMP:
+        case CANHACKER_WRITE_REG:
+        case CANHACKER_READ_REG: {
+            writeSerial(CANHACKER_CR);
+            return CANHACKER_ERROR_OK;
+        }
+        
+        case CANHACKER_READ_STATUS:
         case CANHACKER_READ_ECR:
-        case CANHACKER_READ_ALCR:
-        case CANHACKER_READ_REG:
-            serialOutput(CANHACKER_CR);
-            return CANHACKER_OK;
+        case CANHACKER_READ_ALCR: {
+            if (!isConnected()) {
+                writeSerial(CANHACKER_BEL);
+                return CANHACKER_ERROR_NOT_CONNECTED;
+            }
+            writeSerial(CANHACKER_CR);
+            return CANHACKER_ERROR_OK;
+        }
 
-        default:
-            return CANHACKER_BEL;
+        default: {
+            writeSerial(CANHACKER_BEL);
+            return CANHACKER_ERROR_UNEXPECTED_COMMAND;
+        }
     }
 }
 
-int CanHacker::receiveCanFrame(const struct can_frame *frame) {
+CANHACKER_ERROR CanHacker::receiveCanFrame(const struct can_frame *frame) {
     char out[30];
     createTransmit(frame, out, 30);
-    serialOutput(out);
-    return CANHACKER_OK;
+    writeSerial(out);
+    return CANHACKER_ERROR_OK;
 }
 
-int CanHacker::parseTransmit(const char *buffer, int length, struct can_frame *frame) {
+CANHACKER_ERROR CanHacker::parseTransmit(const char *buffer, int length, struct can_frame *frame) {
     if (length < MIN_MESSAGE_LENGTH) {
-        return CANHACKER_ERROR;
+        return CANHACKER_ERROR_INVALID_COMMAND;
     }
 
     int isExended = 0;
@@ -136,7 +191,7 @@ int CanHacker::parseTransmit(const char *buffer, int length, struct can_frame *f
             isRTR = 1;
             break;
         default:
-            return CANHACKER_ERROR;
+            return CANHACKER_ERROR_INVALID_COMMAND;
 
     }
     
@@ -158,7 +213,7 @@ int CanHacker::parseTransmit(const char *buffer, int length, struct can_frame *f
     
     __u8 dlc = hexCharToByte(buffer[offset++]);
     if (dlc > 8) {
-        return CANHACKER_ERROR;
+        return CANHACKER_ERROR_INVALID_COMMAND;
     }
     frame->can_dlc = dlc;
 
@@ -170,17 +225,17 @@ int CanHacker::parseTransmit(const char *buffer, int length, struct can_frame *f
         }
     }
 
-    return CANHACKER_OK;
+    return CANHACKER_ERROR_OK;
 }
 
-int CanHacker::createTransmit(const struct can_frame *frame, char *buffer, const int length) {
+CANHACKER_ERROR CanHacker::createTransmit(const struct can_frame *frame, char *buffer, const int length) {
     int offset;
     int len = frame->can_dlc;
 
     int isRTR = frame->can_id & CAN_RTR_FLAG ? 1 : 0;
     
     if (frame->can_id & CAN_ERR_FLAG) {
-        return CANHACKER_ERROR;
+        return CANHACKER_ERROR_ERROR_FRAME_NOT_SUPPORTED;
     } else if (frame->can_id & CAN_EFF_FLAG) {
         buffer[0] = isRTR ? 'R' : 'T';
         put_eff_id(buffer+1, frame->can_id & CAN_EFF_MASK);
@@ -204,5 +259,9 @@ int CanHacker::createTransmit(const struct can_frame *frame, char *buffer, const
     buffer[offset++] = CANHACKER_CR;
     buffer[offset] = '\0';
     
-    return CANHACKER_OK;
+    if (offset >= length) {
+        return CANHACKER_ERROR_BUFFER_OVERFLOW;
+    }
+    
+    return CANHACKER_ERROR_OK;
 }

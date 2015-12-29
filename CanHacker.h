@@ -18,14 +18,24 @@
 
 #define CANHACKER_CMD_MAX_LENGTH 26
 
-#define CANHACKER_OK 0
-#define CANHACKER_ERROR -1
+enum CANHACKER_ERROR { 
+    CANHACKER_ERROR_OK, 
+    CANHACKER_ERROR_CONNECTED, 
+    CANHACKER_ERROR_NOT_CONNECTED, 
+    CANHACKER_ERROR_UNEXPECTED_COMMAND,
+    CANHACKER_ERROR_INVALID_COMMAND,
+    CANHACKER_ERROR_ERROR_FRAME_NOT_SUPPORTED,
+    CANHACKER_ERROR_BUFFER_OVERFLOW,
+    CANHACKER_ERROR_MCP2515_INIT,
+    CANHACKER_ERROR_MCP2515_SEND,
+    CANHACKER_ERROR_MCP2515_READ
+};
 
 #define CANHACKER_VERSION       "1010"      // hardware version
 #define CANHACKER_SW_VERSION    "0107"
 #define CANHACKER_SERIAL        "0001"    // device serial number
-#define CANHACKER_CR            (char)'\r'
-#define CANHACKER_BEL           (char)7
+#define CANHACKER_CR            13
+#define CANHACKER_BEL           7
 #define CANHACKER_SET_BITRATE     'S' // set CAN bit rate
 #define CANHACKER_SET_BTR         's' // set CAN bit rate via
 #define CANHACKER_OPEN_CAN_CHAN   'O' // open CAN channel
@@ -53,24 +63,34 @@
 #define CANHACKER_SW_VERSION_RESPONSE "v" CANHACKER_SW_VERSION "\r"
 #define CANHACKER_VERSION_RESPONSE    "V" CANHACKER_VERSION    "\r"
 
-typedef void (*SerialOutputCallbackType)(const char *);
-typedef void (*CanOutputCallbackType)(const struct can_frame *);
-
 class CanHacker {
     private:
-        SerialOutputCallbackType serialOutputCallback;
-        CanOutputCallbackType canOutputCallback;
-        void canOutput(const struct can_frame *frame);
-        void serialOutput(const char *buffer);
-        void serialOutput(const char character);
+        CANHACKER_ERROR parseTransmit(const char *buffer, int length, struct can_frame *frame);
+        CANHACKER_ERROR createTransmit(const struct can_frame *frame, char *buffer, const int length);
+        
+        virtual CANHACKER_ERROR connectCan();
+        virtual CANHACKER_ERROR disconnectCan();
+        virtual bool isConnected();
+        virtual CANHACKER_ERROR writeCan(const struct can_frame *);
+        virtual CANHACKER_ERROR writeSerial(const char *buffer);
+        
+        CANHACKER_ERROR writeSerial(const char character);
+        
     public:
-        CanHacker(SerialOutputCallbackType vSerialOutputCallback, CanOutputCallbackType vCanOutputCallback);
-        virtual ~CanHacker();
+        CANHACKER_ERROR receiveCommand(const char *buffer, const int length);
+        CANHACKER_ERROR receiveCanFrame(const struct can_frame *frame);
+};
 
-        int receiveCommand(const char *buffer, const int length);
-        int receiveCanFrame(const struct can_frame *frame);
-        int parseTransmit(const char *buffer, int length, struct can_frame *frame);
-        int createTransmit(const struct can_frame *frame, char *buffer, const int length);
+class CanHackerLineReader {
+    private:
+        static const int COMMAND_MAX_LENGTH = 30; // not including \r\0
+        
+        CanHacker *canHacker;
+        char buffer[COMMAND_MAX_LENGTH + 2];
+        int index;
+    public:
+        CanHackerLineReader(CanHacker *vCanHacker);
+        CANHACKER_ERROR processChar(char rxChar);
 };
 
 #endif /* CANHACKER_H_ */
