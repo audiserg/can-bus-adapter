@@ -26,6 +26,7 @@ enum CANHACKER_ERROR {
     CANHACKER_ERROR_INVALID_COMMAND,
     CANHACKER_ERROR_ERROR_FRAME_NOT_SUPPORTED,
     CANHACKER_ERROR_BUFFER_OVERFLOW,
+    CANHACKER_ERROR_SERIAL_TX_OVERRUN,
     CANHACKER_ERROR_MCP2515_INIT,
     CANHACKER_ERROR_MCP2515_SEND,
     CANHACKER_ERROR_MCP2515_READ
@@ -34,7 +35,7 @@ enum CANHACKER_ERROR {
 #define CANHACKER_VERSION       "1010"      // hardware version
 #define CANHACKER_SW_VERSION    "0107"
 #define CANHACKER_SERIAL        "0001"    // device serial number
-#define CANHACKER_CR            13
+#define CANHACKER_CR            '\r'
 #define CANHACKER_BEL           7
 #define CANHACKER_SET_BITRATE     'S' // set CAN bit rate
 #define CANHACKER_SET_BTR         's' // set CAN bit rate via
@@ -79,6 +80,7 @@ class CanHacker {
     public:
         CANHACKER_ERROR receiveCommand(const char *buffer, const int length);
         CANHACKER_ERROR receiveCanFrame(const struct can_frame *frame);
+        CANHACKER_ERROR sendFrame(const struct can_frame *);
 };
 
 class CanHackerLineReader {

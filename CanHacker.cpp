@@ -4,9 +4,9 @@
  *  Created on: 17 ���. 2015 �.
  *      Author: Dmitry
  */
+#include <Arduino.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <Arduino.h>
 
 #include "CanHacker.h"
 #include "lib.h"
@@ -97,9 +97,10 @@ CANHACKER_ERROR CanHacker::receiveCommand(const char *buffer, const int length) 
             if (!isConnected()) {
                 return CANHACKER_ERROR_NOT_CONNECTED;
             }
+            
             struct can_frame frame;
             CANHACKER_ERROR error = parseTransmit(buffer, length, &frame);
-            if (error == CANHACKER_ERROR_OK) {
+            if (error != CANHACKER_ERROR_OK) {
                 return error;
             }
             writeCan(&frame);
@@ -224,7 +225,7 @@ CANHACKER_ERROR CanHacker::parseTransmit(const char *buffer, int length, struct 
             frame->data[i] = hexCharToByte(loHex) + (hexCharToByte(hiHex) << 4);
         }
     }
-
+    
     return CANHACKER_ERROR_OK;
 }
 
@@ -264,4 +265,8 @@ CANHACKER_ERROR CanHacker::createTransmit(const struct can_frame *frame, char *b
     }
     
     return CANHACKER_ERROR_OK;
+}
+
+CANHACKER_ERROR CanHacker::sendFrame(const struct can_frame *frame) {
+    return writeCan(frame);
 }
