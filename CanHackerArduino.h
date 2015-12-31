@@ -1,7 +1,6 @@
 #ifndef CANHACKERARDUINO_H_
 #define CANHACKERARDUINO_H_
 
-#include <Arduino.h>
 #include <mcp_can.h>
 #include <mcp_can_dfs.h>
 
@@ -21,12 +20,14 @@ class CanHackerArduino : public CanHacker {
         
     public:
         CanHackerArduino(INT8U _cs, INT8U _mode);
+        CANHACKER_ERROR pollReceiveCan();
         CANHACKER_ERROR receiveCan();
+        MCP_CAN *getMcp2515();
 };
 
 class CanHackerArduinoLineReader : public CanHackerLineReader {
     public:
-        CanHackerArduinoLineReader(CanHackerArduino *vCanHacker) : CanHackerLineReader(vCanHacker) {};
+        CanHackerArduinoLineReader(CanHackerArduino *vCanHacker) : CanHackerLineReader(vCanHacker) { };
         CANHACKER_ERROR process();
 };
 

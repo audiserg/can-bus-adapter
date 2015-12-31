@@ -49,7 +49,39 @@ CANHACKER_ERROR CanHackerArduino::writeCan(const struct can_frame *frame) {
 }
 
 CANHACKER_ERROR CanHackerArduino::writeSerial(const char *buffer) {
+    if (Serial.availableForWrite() < strlen(buffer)) {
+        return CANHACKER_ERROR_SERIAL_TX_OVERRUN;
+    }
     Serial.print(buffer);
+    return CANHACKER_ERROR_OK;
+}
+
+CANHACKER_ERROR CanHackerArduino::pollReceiveCan() {
+    if (!isConnected()) {
+        return CANHACKER_ERROR_OK;
+    }
+    
+    while (CAN_MSGAVAIL == mcp2551->checkReceive()) {
+        struct can_frame frame;
+        if (mcp2551->readMsgBuf(&frame.can_dlc, frame.data) != CAN_OK) {
+            return CANHACKER_ERROR_MCP2515_READ;
+        }
+        canid_t id = mcp2551->getCanId();
+        if (mcp2551->isRemoteRequest()) {
+            id |= CAN_RTR_FLAG;
+        }
+        if (mcp2551->isExtendedFrame()) {
+            id |= CAN_EFF_FLAG;
+        }
+    
+        frame.can_id = id;
+    
+        CANHACKER_ERROR error = receiveCanFrame(&frame);
+        if (error != CANHACKER_ERROR_OK) {
+            return error;
+        }
+    }
+    
     return CANHACKER_ERROR_OK;
 }
 
@@ -58,22 +90,37 @@ CANHACKER_ERROR CanHackerArduino::receiveCan() {
         return CANHACKER_ERROR_OK;
     }
     
-    if (CAN_MSGAVAIL != mcp2551->checkReceive()) {
-        return CANHACKER_ERROR_OK;
-    }
-    struct can_frame frame;
-    if (mcp2551->readMsgBuf(&frame.can_dlc, frame.data) != CAN_OK) {
-        return CANHACKER_ERROR_MCP2515_READ;
-    }
-    canid_t id = mcp2551->getCanId();
-    if (mcp2551->isRemoteRequest()) {
-        id |= CAN_RTR_FLAG;
-    }
-    if (mcp2551->isExtendedFrame()) {
-        id |= CAN_EFF_FLAG;
-    }
+    bool received = false;
+    do {
+        struct can_frame frame;
+        INT8U result = mcp2551->readMsgBuf(&frame.can_dlc, frame.data);
+        
+        if (result == CAN_NOMSG) {
+            break;
+        }
+        
+        if (result != CAN_OK) {
+            return CANHACKER_ERROR_MCP2515_READ;
+        }
+        canid_t id = mcp2551->getCanId();
+        if (mcp2551->isRemoteRequest()) {
+            id |= CAN_RTR_FLAG;
+        }
+        if (mcp2551->isExtendedFrame()) {
+            id |= CAN_EFF_FLAG;
+        }
+    
+        frame.can_id = id;
+    
+        CANHACKER_ERROR error = receiveCanFrame(&frame);
+        if (error != CANHACKER_ERROR_OK) {
+            return error;
+        }
+    } while (received);
+    
+    return CANHACKER_ERROR_OK;
+}
 
-    frame.can_id = id;
-
-    return receiveCanFrame(&frame);
+MCP_CAN *CanHackerArduino::getMcp2515() {
+    return mcp2551;
 }
