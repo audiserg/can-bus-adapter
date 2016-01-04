@@ -1,9 +1,9 @@
 #include <SPI.h>
 #include <mcp_can.h>
 #include <mcp_can_dfs.h>
+
 #include "lib.h"
-
-
+#include "queue.h"
 #include "CanHackerArduino.h"
 
 const int LED_PIN = 13;
@@ -13,6 +13,9 @@ bool interrupt = false;
 
 CanHackerArduinoLineReader *lineReader = NULL;
 CanHackerArduino *canHacker = NULL;
+Queue<32, char> uartRxQueue;
+unsigned long lastTime = 0;
+unsigned long uartRxCount = 0;
 
 void stopAndBlink(const int times) {
     while (1) {
@@ -70,21 +73,31 @@ void loop() {
         MCP_CAN *mcp2551 = canHacker->getMcp2515();
         if (mcp2551 != NULL) {
             INT8U irq = mcp2551->getInterrupts();
+            //INT8U canStat = mcp2551->getCanStat();
             //Serial.print(irq, HEX);
-            /*Serial.print("t0011");
+            /*Serial.print("t0012");
             Serial.write(nibble2ascii(irq >> 4));
             Serial.write(nibble2ascii(irq));
+            Serial.write(nibble2ascii(canStat >> 4));
+            Serial.write(nibble2ascii(canStat));
             Serial.write('\r');*/
             
-            if (irq & (MCP_RX0IF | MCP_RX1IF)) {
-                CANHACKER_ERROR error = canHacker->receiveCan();
+            if (irq & MCP_RX0IF) {
+                CANHACKER_ERROR error = canHacker->receiveCan(MCP_RXBUF_0);
+                if (error != CANHACKER_ERROR_OK) {
+                    stopAndBlink(error);
+                }
+            }
+            
+            if (irq & MCP_RX1IF) {
+                CANHACKER_ERROR error = canHacker->receiveCan(MCP_RXBUF_1);
                 if (error != CANHACKER_ERROR_OK) {
                     stopAndBlink(error);
                 }
             }
             
             if (irq & (MCP_TX0IF | MCP_TX1IF | MCP_TX2IF)) {
-                mcp2551->clearTXInterrupts();
+                //mcp2551->clearTXInterrupts();
                 //Serial.print("MCP_TXxIF\r\n");
                 //stopAndBlink(1);
             }
@@ -105,11 +118,52 @@ void loop() {
             }
         }
     }
+    
+    if (!uartRxQueue.isEmpty()) {
+        CANHACKER_ERROR error = lineReader->processChar(uartRxQueue.read());
+        if (error != CANHACKER_ERROR_OK) {
+            stopAndBlink(error);
+        }
+    }
+    
+    const unsigned int interval = 500;
+    
+    unsigned long time = millis();
+    if (time - lastTime > interval) {
+        lastTime = time;
+        
+        unsigned int uartRxSpeed = uartRxCount * 8 / interval;
+        
+        
+        MCP_CAN *mcp2551 = canHacker->getMcp2515();
+        if (mcp2551 != NULL) {
+            //INT8U irq = mcp2551->getInterrupts();
+            //INT8U canStat = mcp2551->getCanStat();
+            
+            struct can_frame frame;
+            
+            frame.can_id = 1;
+            frame.can_dlc = 6;
+            frame.data[0] = 0;//irq;
+            frame.data[1] = 0; //canStat;
+            size_t count = uartRxQueue.count();
+            frame.data[2] = count;
+            frame.data[3] = uartRxCount >> 8;
+            frame.data[4] = uartRxCount;
+            frame.data[5] = uartRxSpeed;
+            canHacker->receiveCanFrame(&frame);
+        }
+        
+        uartRxCount = 0;
+    }
 }
 
 void serialEvent() {
-    CANHACKER_ERROR error = lineReader->process();
-    if (error != CANHACKER_ERROR_OK) {
-        stopAndBlink(error);
+    while (Serial.available()) {
+        if (uartRxQueue.isFull()) {
+            stopAndBlink(5);
+        }
+        uartRxCount++;
+        uartRxQueue.write(Serial.read());
     }
 }
