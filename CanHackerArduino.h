@@ -11,17 +11,19 @@ class CanHackerArduino : public CanHacker {
         uint8_t cs;
         MCP_CAN::MODE mode;
         MCP_CAN *mcp2551;
+        CAN_SPEED bitrate;
         
-        CANHACKER_ERROR connectCan();
-        CANHACKER_ERROR disconnectCan();
+        ERROR connectCan();
+        ERROR disconnectCan();
         bool isConnected();
-        CANHACKER_ERROR writeCan(const struct can_frame *);
-        CANHACKER_ERROR writeSerial(const char *buffer);
+        ERROR writeCan(const struct can_frame *);
+        ERROR writeSerial(const char *buffer);
+        ERROR receiveSetBitrateCommand(const char *buffer, const int length);
         
     public:
         CanHackerArduino(uint8_t _cs, MCP_CAN::MODE _mode);
-        CANHACKER_ERROR pollReceiveCan();
-        CANHACKER_ERROR receiveCan(const MCP_CAN::RXBn rxBuffer);
+        ERROR pollReceiveCan();
+        ERROR receiveCan(const MCP_CAN::RXBn rxBuffer);
         uint16_t getTimestamp();
         MCP_CAN *getMcp2515();
 };
@@ -29,7 +31,7 @@ class CanHackerArduino : public CanHacker {
 class CanHackerArduinoLineReader : public CanHackerLineReader {
     public:
         CanHackerArduinoLineReader(CanHackerArduino *vCanHacker) : CanHackerLineReader(vCanHacker) { };
-        CANHACKER_ERROR process();
+        CanHacker::ERROR process();
 };
 
 #endif /* CANHACKERARDUINO_H_ */

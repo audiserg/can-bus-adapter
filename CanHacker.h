@@ -18,75 +18,83 @@
 
 #define CANHACKER_CMD_MAX_LENGTH 26
 
-enum CANHACKER_ERROR { 
-    CANHACKER_ERROR_OK, 
-    CANHACKER_ERROR_CONNECTED, 
-    CANHACKER_ERROR_NOT_CONNECTED, 
-    CANHACKER_ERROR_UNEXPECTED_COMMAND,
-    CANHACKER_ERROR_INVALID_COMMAND,
-    CANHACKER_ERROR_ERROR_FRAME_NOT_SUPPORTED,
-    CANHACKER_ERROR_BUFFER_OVERFLOW,
-    CANHACKER_ERROR_SERIAL_TX_OVERRUN,
-    CANHACKER_ERROR_MCP2515_INIT,
-    CANHACKER_ERROR_MCP2515_SEND,
-    CANHACKER_ERROR_MCP2515_READ
-};
-
-#define CANHACKER_VERSION       "1010"      // hardware version
-#define CANHACKER_SW_VERSION    "0107"
-#define CANHACKER_SERIAL        "0001"    // device serial number
-#define CANHACKER_CR            '\r'
-#define CANHACKER_BEL           7
-#define CANHACKER_SET_BITRATE     'S' // set CAN bit rate
-#define CANHACKER_SET_BTR         's' // set CAN bit rate via
-#define CANHACKER_OPEN_CAN_CHAN   'O' // open CAN channel
-#define CANHACKER_CLOSE_CAN_CHAN  'C' // close CAN channel
-#define CANHACKER_SEND_11BIT_ID   't' // send CAN message with 11bit ID
-#define CANHACKER_SEND_29BIT_ID   'T' // send CAN message with 29bit ID
-#define CANHACKER_SEND_R11BIT_ID  'r' // send CAN remote message with 11bit ID
-#define CANHACKER_SEND_R29BIT_ID  'R' // send CAN remote message with 29bit ID
-#define CANHACKER_READ_STATUS     'F' // read status flag byte
-#define CANHACKER_SET_ACR         'M' // set Acceptance Code Register
-#define CANHACKER_SET_AMR         'm' // set Acceptance Mask Register
-#define CANHACKER_GET_VERSION     'V' // get hardware and software version
-#define CANHACKER_GET_SW_VERSION  'v' // get software version only
-#define CANHACKER_GET_SERIAL      'N' // get device serial number
-#define CANHACKER_TIME_STAMP      'Z' // toggle time stamp setting
-#define CANHACKER_READ_ECR        'E' // read Error Capture Register
-#define CANHACKER_READ_ALCR       'A' // read Arbritation Lost Capture Register
-#define CANHACKER_READ_REG        'G'   // read register conten from SJA1000
-#define CANHACKER_WRITE_REG       'W'   // write register content to SJA1000
-#define CANHACKER_LISTEN_ONLY     'L' // switch to listen only mode
-
-#define TIME_STAMP_TICK 1000    // microseconds
-
-#define CANHACKER_SERIAL_RESPONSE     "N" CANHACKER_SERIAL     "\r"
-#define CANHACKER_SW_VERSION_RESPONSE "v" CANHACKER_SW_VERSION "\r"
-#define CANHACKER_VERSION_RESPONSE    "V" CANHACKER_VERSION    "\r"
+#define CANHACKER_SERIAL_RESPONSE     "N0001\r"
+#define CANHACKER_SW_VERSION_RESPONSE "v0107\r"
+#define CANHACKER_VERSION_RESPONSE    "V1010\r"
 
 class CanHacker {
-    private:
-        CANHACKER_ERROR parseTransmit(const char *buffer, int length, struct can_frame *frame);
-        CANHACKER_ERROR createTransmit(const struct can_frame *frame, char *buffer, const int length);
+    public:
+        enum ERROR { 
+            ERROR_OK, 
+            ERROR_CONNECTED, 
+            ERROR_NOT_CONNECTED, 
+            ERROR_UNEXPECTED_COMMAND,
+            ERROR_INVALID_COMMAND,
+            ERROR_ERROR_FRAME_NOT_SUPPORTED,
+            ERROR_BUFFER_OVERFLOW,
+            ERROR_SERIAL_TX_OVERRUN,
+            ERROR_LISTEN_ONLY,
+            ERROR_MCP2515_INIT,
+            ERROR_MCP2515_SEND,
+            ERROR_MCP2515_READ
+        };
         
-        virtual CANHACKER_ERROR connectCan();
-        virtual CANHACKER_ERROR disconnectCan();
+        ERROR receiveCommand(const char *buffer, const int length);
+        ERROR receiveCanFrame(const struct can_frame *frame);
+        ERROR sendFrame(const struct can_frame *);
+
+    private:
+    
+        enum /*class*/ COMMAND : char {
+            COMMAND_SET_BITRATE    = 'S', // set CAN bit rate
+            COMMAND_SET_BTR        = 's', // set CAN bit rate via
+            COMMAND_OPEN_CAN_CHAN  = 'O', // open CAN channel
+            COMMAND_CLOSE_CAN_CHAN = 'C', // close CAN channel
+            COMMAND_SEND_11BIT_ID  = 't', // send CAN message with 11bit ID
+            COMMAND_SEND_29BIT_ID  = 'T', // send CAN message with 29bit ID
+            COMMAND_SEND_R11BIT_ID = 'r', // send CAN remote message with 11bit ID
+            COMMAND_SEND_R29BIT_ID = 'R', // send CAN remote message with 29bit ID
+            COMMAND_READ_STATUS    = 'F', // read status flag byte
+            COMMAND_SET_ACR        = 'M', // set Acceptance Code Register
+            COMMAND_SET_AMR        = 'm', // set Acceptance Mask Register
+            COMMAND_GET_VERSION    = 'V', // get hardware and software version
+            COMMAND_GET_SW_VERSION = 'v', // get software version only
+            COMMAND_GET_SERIAL     = 'N', // get device serial number
+            COMMAND_TIME_STAMP     = 'Z', // toggle time stamp setting
+            COMMAND_READ_ECR       = 'E', // read Error Capture Register
+            COMMAND_READ_ALCR      = 'A', // read Arbritation Lost Capture Register
+            COMMAND_READ_REG       = 'G', // read register conten from SJA1000
+            COMMAND_WRITE_REG      = 'W', // write register content to SJA1000
+            COMMAND_LISTEN_ONLY    = 'L'  // switch to listen only mode
+        };
+    
+        bool timestampEnabled = false;
+        bool listenOnly = false;
+    
+        ERROR parseTransmit(const char *buffer, int length, struct can_frame *frame);
+        ERROR createTransmit(const struct can_frame *frame, char *buffer, const int length);
+        
+        virtual ERROR connectCan();
+        virtual ERROR disconnectCan();
         virtual bool isConnected();
-        virtual CANHACKER_ERROR writeCan(const struct can_frame *);
-        virtual CANHACKER_ERROR writeSerial(const char *buffer);
+        virtual ERROR writeCan(const struct can_frame *);
+        virtual ERROR writeSerial(const char *buffer);
         virtual uint16_t getTimestamp();
         
-        CANHACKER_ERROR writeSerial(const char character);
-        
-        bool timestampEnabled = false;
+        virtual ERROR receiveSetBitrateCommand(const char *buffer, const int length);
+        ERROR receiveTransmitCommand(const char *buffer, const int length);
+        ERROR receiveTimestampCommand(const char *buffer, const int length);
+        ERROR receiveCloseCommand(const char *buffer, const int length);
+        ERROR receiveOpenCommand(const char *buffer, const int length);
+        ERROR receiveListenOnlyCommand(const char *buffer, const int length);
         
     protected:
         static const uint16_t TIMESTAMP_LIMIT = 0xEA60;
         
-    public:
-        CANHACKER_ERROR receiveCommand(const char *buffer, const int length);
-        CANHACKER_ERROR receiveCanFrame(const struct can_frame *frame);
-        CANHACKER_ERROR sendFrame(const struct can_frame *);
+        static const char CR  = '\r';
+        static const char BEL = 7;
+        
+        ERROR writeSerial(const char character);
 };
 
 class CanHackerLineReader {
@@ -98,7 +106,7 @@ class CanHackerLineReader {
         int index;
     public:
         CanHackerLineReader(CanHacker *vCanHacker);
-        CANHACKER_ERROR processChar(char rxChar);
+        CanHacker::ERROR processChar(char rxChar);
 };
 
 #endif /* CANHACKER_H_ */

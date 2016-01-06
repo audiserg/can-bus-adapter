@@ -28,7 +28,7 @@ void stopAndBlink(const int times) {
     }
 }
 
-void stopAndBlink(const CANHACKER_ERROR error) {
+void stopAndBlink(const CanHacker::ERROR error) {
     int c = error;
     for (int i=0;i<c;i++) {
         digitalWrite(LED_PIN, HIGH);
@@ -81,15 +81,15 @@ void loop() {
             Serial.write('\r');*/
             
             if (irq & MCP_CAN::CANINTF_RX0IF) {
-                CANHACKER_ERROR error = canHacker->receiveCan(MCP_CAN::RXB0);
-                if (error != CANHACKER_ERROR_OK) {
+                CanHacker::ERROR error = canHacker->receiveCan(MCP_CAN::RXB0);
+                if (error != CanHacker::ERROR_OK) {
                     stopAndBlink(error);
                 }
             }
             
             if (irq & MCP_CAN::CANINTF_RX1IF) {
-                CANHACKER_ERROR error = canHacker->receiveCan(MCP_CAN::RXB1);
-                if (error != CANHACKER_ERROR_OK) {
+                CanHacker::ERROR error = canHacker->receiveCan(MCP_CAN::RXB1);
+                if (error != CanHacker::ERROR_OK) {
                     stopAndBlink(error);
                 }
             }
@@ -149,8 +149,8 @@ void loop() {
 }
 
 void serialEvent() {
-    CANHACKER_ERROR error = lineReader->process();
-    if (error != CANHACKER_ERROR_OK) {
+    CanHacker::ERROR error = lineReader->process();
+    if (error != CanHacker::ERROR_OK) {
         stopAndBlink(error);
     }
 }
