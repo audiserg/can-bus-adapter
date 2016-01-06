@@ -37,11 +37,7 @@ bool CanHackerArduino::isConnected() {
 }
 
 CanHacker::ERROR CanHackerArduino::writeCan(const struct can_frame *frame) {
-    uint8_t isExtended = frame->can_id & CAN_EFF_FLAG ? 1 : 0;
-    uint8_t isRTR = frame->can_id & CAN_RTR_FLAG ? 1 : 0;
-    canid_t id = frame->can_id & (isExtended ? CAN_EFF_MASK : CAN_SFF_MASK);
-
-    if (mcp2551->sendMessage(id, isExtended, isRTR, frame->can_dlc, frame->data) != MCP_CAN::ERROR_OK) {
+    if (mcp2551->sendMessage(frame) != MCP_CAN::ERROR_OK) {
         return ERROR_MCP2515_SEND;
     }
     
@@ -63,19 +59,9 @@ CanHacker::ERROR CanHackerArduino::pollReceiveCan() {
     
     while (mcp2551->checkReceive()) {
         struct can_frame frame;
-        canid_t id;
-        bool rtr, ext;
-        if (mcp2551->readMessage(&id, &frame.can_dlc, frame.data, &rtr, &ext) != MCP_CAN::ERROR_OK) {
+        if (mcp2551->readMessage(&frame) != MCP_CAN::ERROR_OK) {
             return ERROR_MCP2515_READ;
         }
-        if (rtr) {
-            id |= CAN_RTR_FLAG;
-        }
-        if (ext) {
-            id |= CAN_EFF_FLAG;
-        }
-    
-        frame.can_id = id;
     
         ERROR error = receiveCanFrame(&frame);
         if (error != ERROR_OK) {
@@ -94,10 +80,7 @@ CanHacker::ERROR CanHackerArduino::receiveCan(const MCP_CAN::RXBn rxBuffer) {
     bool received = false;
     do {
         struct can_frame frame;
-        canid_t id;
-        bool rtr, ext;
-        MCP_CAN::ERROR result = mcp2551->readMessage(rxBuffer, &id, &frame.can_dlc, frame.data, &rtr, &ext);
-        
+        MCP_CAN::ERROR result = mcp2551->readMessage(rxBuffer, &frame);
         if (result == MCP_CAN::ERROR_NOMSG) {
             break;
         }
@@ -106,15 +89,6 @@ CanHacker::ERROR CanHackerArduino::receiveCan(const MCP_CAN::RXBn rxBuffer) {
             return ERROR_MCP2515_READ;
         }
 
-        if (rtr) {
-            id |= CAN_RTR_FLAG;
-        }
-        if (ext) {
-            id |= CAN_EFF_FLAG;
-        }
-    
-        frame.can_id = id;
-    
         ERROR error = receiveCanFrame(&frame);
         if (error != ERROR_OK) {
             return error;

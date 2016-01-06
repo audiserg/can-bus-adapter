@@ -1,6 +1,5 @@
 #include <SPI.h>
 #include <mcp_can.h>
-#include <mcp_can_dfs.h>
 
 #include "lib.h"
 #include "CanHackerArduino.h"

@@ -8,7 +8,7 @@
 #ifndef CANHACKER_H_
 #define CANHACKER_H_
 
-#include "can.h"
+#include <can.h>
 
 #define CAN_MIN_DLEN 1
 #define HEX_PER_BYTE 2
