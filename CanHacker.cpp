@@ -138,7 +138,12 @@ CANHACKER_ERROR CanHacker::receiveCommand(const char *buffer, const int length) 
             return CANHACKER_ERROR_OK;
         }
         
-        case CANHACKER_TIME_STAMP:
+        case CANHACKER_TIME_STAMP: {
+            timestampEnabled = !timestampEnabled;
+            writeSerial(CANHACKER_CR);
+            return CANHACKER_ERROR_OK;
+        }
+            
         case CANHACKER_WRITE_REG:
         case CANHACKER_READ_REG: {
             writeSerial(CANHACKER_CR);
@@ -256,7 +261,16 @@ CANHACKER_ERROR CanHacker::createTransmit(const struct can_frame *frame, char *b
             offset += 2;
         }
     }
-
+    
+    uint16_t ts = getTimestamp();
+    
+    if (timestampEnabled) {
+        put_hex_byte(buffer + offset, ts >> 8);
+        offset += 2;
+        put_hex_byte(buffer + offset, ts);
+        offset += 2;
+    }
+    
     buffer[offset++] = CANHACKER_CR;
     buffer[offset] = '\0';
     

@@ -22,6 +22,7 @@ class CanHackerArduino : public CanHacker {
         CanHackerArduino(uint8_t _cs, MCP_CAN::MODE _mode);
         CANHACKER_ERROR pollReceiveCan();
         CANHACKER_ERROR receiveCan(const MCP_CAN::RXBn rxBuffer);
+        uint16_t getTimestamp();
         MCP_CAN *getMcp2515();
 };
 

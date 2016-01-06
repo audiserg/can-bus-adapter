@@ -127,3 +127,7 @@ CANHACKER_ERROR CanHackerArduino::receiveCan(const MCP_CAN::RXBn rxBuffer) {
 MCP_CAN *CanHackerArduino::getMcp2515() {
     return mcp2551;
 }
+
+uint16_t CanHackerArduino::getTimestamp() {
+    return millis() % TIMESTAMP_LIMIT;
+}

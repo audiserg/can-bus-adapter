@@ -74,8 +74,14 @@ class CanHacker {
         virtual bool isConnected();
         virtual CANHACKER_ERROR writeCan(const struct can_frame *);
         virtual CANHACKER_ERROR writeSerial(const char *buffer);
+        virtual uint16_t getTimestamp();
         
         CANHACKER_ERROR writeSerial(const char character);
+        
+        bool timestampEnabled = false;
+        
+    protected:
+        static const uint16_t TIMESTAMP_LIMIT = 0xEA60;
         
     public:
         CANHACKER_ERROR receiveCommand(const char *buffer, const int length);
