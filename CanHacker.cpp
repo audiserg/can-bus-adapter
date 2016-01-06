@@ -286,8 +286,25 @@ CanHacker::ERROR CanHacker::receiveTransmitCommand(const char *buffer, const int
 }
 
 CanHacker::ERROR CanHacker::receiveTimestampCommand(const char *buffer, const int length) {
-    timestampEnabled = !timestampEnabled;
-    writeSerial(CR);
+    if (length != 2) {
+        writeSerial(BEL);
+        return ERROR_INVALID_COMMAND;
+    }
+    switch (buffer[1]) {
+        case '0':
+            timestampEnabled = false;
+            writeSerial(CR);
+            break;
+        case '1':
+            timestampEnabled = true;
+            writeSerial(CR);
+            break;
+        default:
+            writeSerial(BEL);
+            return ERROR_INVALID_COMMAND;
+            break;
+    }
+
     return ERROR_OK;
 }
 
