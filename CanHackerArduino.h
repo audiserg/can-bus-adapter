@@ -2,7 +2,6 @@
 #define CANHACKERARDUINO_H_
 
 #include <mcp_can.h>
-#include <mcp_can_dfs.h>
 
 #include "CanHacker.h"
 
