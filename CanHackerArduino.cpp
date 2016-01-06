@@ -11,7 +11,7 @@ CANHACKER_ERROR CanHackerArduinoLineReader::process() {
     return CANHACKER_ERROR_OK;
 }
 
-CanHackerArduino::CanHackerArduino(INT8U _cs, INT8U _mode) {
+CanHackerArduino::CanHackerArduino(uint8_t _cs, MCP_CAN::MODE _mode) {
     cs = _cs;
     mode = _mode;
     mcp2551 = NULL;
@@ -20,7 +20,7 @@ CanHackerArduino::CanHackerArduino(INT8U _cs, INT8U _mode) {
 CANHACKER_ERROR CanHackerArduino::connectCan() {
     mcp2551 = new MCP_CAN(cs, mode);
     
-    if (mcp2551->begin(CAN_125KBPS) != MCP2515_OK) {
+    if (mcp2551->begin(CAN_125KBPS) != MCP_CAN::ERROR_OK) {
         return CANHACKER_ERROR_MCP2515_INIT;
     }
     return CANHACKER_ERROR_OK;
@@ -37,11 +37,11 @@ bool CanHackerArduino::isConnected() {
 }
 
 CANHACKER_ERROR CanHackerArduino::writeCan(const struct can_frame *frame) {
-    INT8U isExtended = frame->can_id & CAN_EFF_FLAG ? 1 : 0;
-    INT8U isRTR = frame->can_id & CAN_RTR_FLAG ? 1 : 0;
+    uint8_t isExtended = frame->can_id & CAN_EFF_FLAG ? 1 : 0;
+    uint8_t isRTR = frame->can_id & CAN_RTR_FLAG ? 1 : 0;
     canid_t id = frame->can_id & (isExtended ? CAN_EFF_MASK : CAN_SFF_MASK);
 
-    if (mcp2551->sendMessage(id, isExtended, isRTR, frame->can_dlc, frame->data) != CAN_OK) {
+    if (mcp2551->sendMessage(id, isExtended, isRTR, frame->can_dlc, frame->data) != MCP_CAN::ERROR_OK) {
         return CANHACKER_ERROR_MCP2515_SEND;
     }
     
@@ -61,11 +61,11 @@ CANHACKER_ERROR CanHackerArduino::pollReceiveCan() {
         return CANHACKER_ERROR_OK;
     }
     
-    while (CAN_MSGAVAIL == mcp2551->checkReceive()) {
+    while (mcp2551->checkReceive()) {
         struct can_frame frame;
         canid_t id;
         bool rtr, ext;
-        if (mcp2551->readMessage(&id, &frame.can_dlc, frame.data, &rtr, &ext) != CAN_OK) {
+        if (mcp2551->readMessage(&id, &frame.can_dlc, frame.data, &rtr, &ext) != MCP_CAN::ERROR_OK) {
             return CANHACKER_ERROR_MCP2515_READ;
         }
         if (rtr) {
@@ -86,7 +86,7 @@ CANHACKER_ERROR CanHackerArduino::pollReceiveCan() {
     return CANHACKER_ERROR_OK;
 }
 
-CANHACKER_ERROR CanHackerArduino::receiveCan(const INT8U rxBuffer) {
+CANHACKER_ERROR CanHackerArduino::receiveCan(const MCP_CAN::RXBn rxBuffer) {
     if (!isConnected()) {
         return CANHACKER_ERROR_OK;
     }
@@ -96,13 +96,13 @@ CANHACKER_ERROR CanHackerArduino::receiveCan(const INT8U rxBuffer) {
         struct can_frame frame;
         canid_t id;
         bool rtr, ext;
-        INT8U result = mcp2551->readMessage(rxBuffer, &id, &frame.can_dlc, frame.data, &rtr, &ext);
+        MCP_CAN::ERROR result = mcp2551->readMessage(rxBuffer, &id, &frame.can_dlc, frame.data, &rtr, &ext);
         
-        if (result == CAN_NOMSG) {
+        if (result == MCP_CAN::ERROR_NOMSG) {
             break;
         }
         
-        if (result != CAN_OK) {
+        if (result != MCP_CAN::ERROR_OK) {
             return CANHACKER_ERROR_MCP2515_READ;
         }
 

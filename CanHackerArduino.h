@@ -8,8 +8,8 @@
 
 class CanHackerArduino : public CanHacker {
     private:
-        INT8U cs;
-        INT8U mode;
+        uint8_t cs;
+        MCP_CAN::MODE mode;
         MCP_CAN *mcp2551;
         
         CANHACKER_ERROR connectCan();
@@ -19,9 +19,9 @@ class CanHackerArduino : public CanHacker {
         CANHACKER_ERROR writeSerial(const char *buffer);
         
     public:
-        CanHackerArduino(INT8U _cs, INT8U _mode);
+        CanHackerArduino(uint8_t _cs, MCP_CAN::MODE _mode);
         CANHACKER_ERROR pollReceiveCan();
-        CANHACKER_ERROR receiveCan(const INT8U rxBuffer);
+        CANHACKER_ERROR receiveCan(const MCP_CAN::RXBn rxBuffer);
         MCP_CAN *getMcp2515();
 };
 
