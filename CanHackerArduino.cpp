@@ -154,3 +154,27 @@ CanHacker::ERROR CanHackerArduino::receiveSetBitrateCommand(const char *buffer, 
     CanHacker::writeSerial(CR);
     return ERROR_OK;
 }
+
+CanHacker::ERROR CanHackerArduino::processInterrupt() {
+    if (!isConnected()) {
+        return ERROR_NOT_CONNECTED;
+    }
+
+    uint8_t irq = mcp2551->getInterrupts();
+   
+    if (irq & MCP_CAN::CANINTF_RX0IF) {
+        ERROR error = receiveCan(MCP_CAN::RXB0);
+        if (error != ERROR_OK) {
+            return error;
+        }
+    }
+    
+    if (irq & MCP_CAN::CANINTF_RX1IF) {
+        ERROR error = receiveCan(MCP_CAN::RXB1);
+        if (error != ERROR_OK) {
+            return error;
+        }
+    }
+    
+    return ERROR_OK;
+}

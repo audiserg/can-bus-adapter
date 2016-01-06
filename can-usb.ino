@@ -50,24 +50,9 @@ void irqHandler() {
 void loop() {
     if (interrupt) {
         interrupt = false;
-        
-        MCP_CAN *mcp2551 = canHacker->getMcp2515();
-        if (mcp2551 != NULL) {
-            uint8_t irq = mcp2551->getInterrupts();
-           
-            if (irq & MCP_CAN::CANINTF_RX0IF) {
-                CanHacker::ERROR error = canHacker->receiveCan(MCP_CAN::RXB0);
-                if (error != CanHacker::ERROR_OK) {
-                    stopAndBlink(error);
-                }
-            }
-            
-            if (irq & MCP_CAN::CANINTF_RX1IF) {
-                CanHacker::ERROR error = canHacker->receiveCan(MCP_CAN::RXB1);
-                if (error != CanHacker::ERROR_OK) {
-                    stopAndBlink(error);
-                }
-            }
+        CanHacker::ERROR error = canHacker->processInterrupt();
+        if (error != CanHacker::ERROR_OK) {
+            stopAndBlink(error);
         }
     }
 }

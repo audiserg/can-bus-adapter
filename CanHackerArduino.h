@@ -25,6 +25,7 @@ class CanHackerArduino : public CanHacker {
         ERROR receiveCan(const MCP_CAN::RXBn rxBuffer);
         uint16_t getTimestamp();
         MCP_CAN *getMcp2515();
+        ERROR processInterrupt();
 };
 
 class CanHackerArduinoLineReader : public CanHackerLineReader {
