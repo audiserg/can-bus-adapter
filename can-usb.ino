@@ -37,7 +37,7 @@ void setup() {
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, LOW);
 
-    canHacker = new CanHackerArduino(SPI_CS_PIN, MCP_CAN::MODE_LOOPBACK);
+    canHacker = new CanHackerArduino(SPI_CS_PIN, MCP_CAN::MODE_NORMAL);
     lineReader = new CanHackerArduinoLineReader(canHacker);
     
     attachInterrupt(0, irqHandler, FALLING);
