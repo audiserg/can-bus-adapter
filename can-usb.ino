@@ -4,7 +4,6 @@
 #include "lib.h"
 #include "CanHackerArduino.h"
 
-const int LED_PIN = 13;
 const int SPI_CS_PIN = 10;
 
 bool interrupt = false;
@@ -15,18 +14,18 @@ CanHackerArduino *canHacker = NULL;
 void stopAndBlink(const CanHacker::ERROR error) {
     int c = error;
     for (int i=0;i<c;i++) {
-        digitalWrite(LED_PIN, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH);
         delay(500);
-        digitalWrite(LED_PIN, LOW);
+        digitalWrite(LED_BUILTIN, LOW);
         delay(500);
     }
     
     delay(1000);
     
     while (1) {
-        digitalWrite(LED_PIN, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH);
         delay(300);
-        digitalWrite(LED_PIN, LOW);
+        digitalWrite(LED_BUILTIN, LOW);
         delay(300);
     } ;
 }
@@ -34,8 +33,8 @@ void stopAndBlink(const CanHacker::ERROR error) {
 void setup() {
     Serial.begin(115200);
     
-    pinMode(LED_PIN, OUTPUT);
-    digitalWrite(LED_PIN, LOW);
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
 
     canHacker = new CanHackerArduino(SPI_CS_PIN, MCP_CAN::MODE_NORMAL);
     lineReader = new CanHackerArduinoLineReader(canHacker);
