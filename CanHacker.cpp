@@ -148,9 +148,11 @@ CanHacker::ERROR CanHacker::receiveCommand(const char *buffer, const int length)
 
 CanHacker::ERROR CanHacker::receiveCanFrame(const struct can_frame *frame) {
     char out[35];
-    createTransmit(frame, out, 35);
-    writeSerial(out);
-    return ERROR_OK;
+    ERROR error = createTransmit(frame, out, 35);
+    if (error != ERROR_OK) {
+        return error;
+    }
+    return writeSerial(out);
 }
 
 CanHacker::ERROR CanHacker::parseTransmit(const char *buffer, int length, struct can_frame *frame) {
