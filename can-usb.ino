@@ -12,21 +12,17 @@ CanHackerArduinoLineReader *lineReader = NULL;
 CanHackerArduino *canHacker = NULL;
 
 void stopAndBlink(const CanHacker::ERROR error) {
-    int c = error;
-    for (int i=0;i<c;i++) {
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(500);
-        digitalWrite(LED_BUILTIN, LOW);
-        delay(500);
-    }
-    
-    delay(1000);
-    
+  
     while (1) {
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(300);
-        digitalWrite(LED_BUILTIN, LOW);
-        delay(300);
+        int c = error;
+        for (int i=0;i<c;i++) {
+            digitalWrite(LED_BUILTIN, HIGH);
+            delay(500);
+            digitalWrite(LED_BUILTIN, LOW);
+            delay(500);
+        }
+        
+        delay(2000);
     } ;
 }
 
@@ -36,7 +32,7 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
 
-    canHacker = new CanHackerArduino(SPI_CS_PIN, MCP_CAN::MODE_NORMAL);
+    canHacker = new CanHackerArduino(SPI_CS_PIN, MCP_CAN::MODE_LOOPBACK);
     lineReader = new CanHackerArduinoLineReader(canHacker);
     
     attachInterrupt(0, irqHandler, FALLING);

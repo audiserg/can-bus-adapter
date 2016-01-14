@@ -76,18 +76,15 @@ CanHacker::ERROR CanHacker::writeSerial(const char character) {
 CanHacker::ERROR CanHacker::receiveCommand(const char *buffer, const int length) {
     switch (buffer[0]) {
         case COMMAND_GET_SERIAL: {
-            writeSerial(CANHACKER_SERIAL_RESPONSE);
-            return ERROR_OK;
+            return writeSerial(CANHACKER_SERIAL_RESPONSE);
         }
 
         case COMMAND_GET_SW_VERSION: {
-            writeSerial(CANHACKER_SW_VERSION_RESPONSE);
-            return ERROR_OK;
+            return writeSerial(CANHACKER_SW_VERSION_RESPONSE);
         }
 
         case COMMAND_GET_VERSION: {
-            writeSerial(CANHACKER_VERSION_RESPONSE);
-            return ERROR_OK;
+            return writeSerial(CANHACKER_VERSION_RESPONSE);
         }
 
         case COMMAND_SEND_11BIT_ID:
@@ -112,8 +109,7 @@ CanHacker::ERROR CanHacker::receiveCommand(const char *buffer, const int length)
                 writeSerial(BEL);
                 return ERROR_CONNECTED;
             }
-            writeSerial(CR);
-            return ERROR_OK;
+            return writeSerial(CR);
         }
         
         case COMMAND_LISTEN_ONLY:
@@ -124,8 +120,7 @@ CanHacker::ERROR CanHacker::receiveCommand(const char *buffer, const int length)
             
         case COMMAND_WRITE_REG:
         case COMMAND_READ_REG: {
-            writeSerial(CR);
-            return ERROR_OK;
+            return writeSerial(CR);
         }
         
         case COMMAND_READ_STATUS:
@@ -135,8 +130,7 @@ CanHacker::ERROR CanHacker::receiveCommand(const char *buffer, const int length)
                 writeSerial(BEL);
                 return ERROR_NOT_CONNECTED;
             }
-            writeSerial(CR);
-            return ERROR_OK;
+            return writeSerial(CR);
         }
 
         default: {
@@ -283,8 +277,7 @@ CanHacker::ERROR CanHacker::receiveTransmitCommand(const char *buffer, const int
         return error;
     }
 
-    writeSerial(CR);
-    return ERROR_OK;
+    return writeSerial(CR);
 }
 
 CanHacker::ERROR CanHacker::receiveTimestampCommand(const char *buffer, const int length) {
@@ -295,16 +288,13 @@ CanHacker::ERROR CanHacker::receiveTimestampCommand(const char *buffer, const in
     switch (buffer[1]) {
         case '0':
             timestampEnabled = false;
-            writeSerial(CR);
-            break;
+            return writeSerial(CR);
         case '1':
             timestampEnabled = true;
-            writeSerial(CR);
-            break;
+            return writeSerial(CR);
         default:
             writeSerial(BEL);
             return ERROR_INVALID_COMMAND;
-            break;
     }
 
     return ERROR_OK;
@@ -312,18 +302,21 @@ CanHacker::ERROR CanHacker::receiveTimestampCommand(const char *buffer, const in
 
 CanHacker::ERROR CanHacker::receiveCloseCommand(const char *buffer, const int length) {
     if (!isConnected()) {
-        writeSerial(BEL);
-        return ERROR_OK;
+        return writeSerial(BEL);
     }
-    disconnectCan();
-    writeSerial(CR);
-    return ERROR_OK;
+    ERROR error = disconnectCan();
+    if (error != ERROR_OK) {
+        return error;
+    }
+    return writeSerial(CR);
 }
 
 CanHacker::ERROR CanHacker::receiveOpenCommand(const char *buffer, const int length) {
-    connectCan();
-    writeSerial(CR);
-    return ERROR_OK;
+    ERROR error = connectCan();
+    if (error != ERROR_OK) {
+        return error;
+    }
+    return writeSerial(CR);
 }
 
 CanHacker::ERROR CanHacker::receiveListenOnlyCommand(const char *buffer, const int length) {
@@ -332,6 +325,5 @@ CanHacker::ERROR CanHacker::receiveListenOnlyCommand(const char *buffer, const i
         return ERROR_CONNECTED;
     }
     listenOnly = true;
-    writeSerial(CR);
-    return ERROR_OK;
+    return writeSerial(CR);
 }

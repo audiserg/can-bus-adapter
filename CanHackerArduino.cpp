@@ -27,8 +27,10 @@ CanHacker::ERROR CanHackerArduino::connectCan() {
 }
 
 CanHacker::ERROR CanHackerArduino::disconnectCan() {
-    delete mcp2551;
-    mcp2551 = NULL;
+    if (mcp2551 != NULL) {
+        delete mcp2551;
+        mcp2551 = NULL;
+    }
     return ERROR_OK;
 }
 
@@ -151,8 +153,7 @@ CanHacker::ERROR CanHackerArduino::receiveSetBitrateCommand(const char *buffer, 
             break;
     }
     
-    CanHacker::writeSerial(CR);
-    return ERROR_OK;
+    return CanHacker::writeSerial(CR);
 }
 
 CanHacker::ERROR CanHackerArduino::processInterrupt() {
