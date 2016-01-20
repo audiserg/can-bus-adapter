@@ -13,8 +13,15 @@ CanHackerArduino *canHacker = NULL;
 
 void stopAndBlink(const CanHacker::ERROR error) {
   
+    Serial.print("Failure (code ");
+    Serial.print((int)error);
+    Serial.println(")");
+
+    digitalWrite(SPI_CS_PIN, HIGH);    
+    pinMode(LED_BUILTIN, OUTPUT);
+  
     while (1) {
-        int c = error;
+        int c = (int)error;
         for (int i=0;i<c;i++) {
             digitalWrite(LED_BUILTIN, HIGH);
             delay(500);
@@ -28,11 +35,10 @@ void stopAndBlink(const CanHacker::ERROR error) {
 
 void setup() {
     Serial.begin(115200);
+    SPI.begin();
     
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, LOW);
-
-    canHacker = new CanHackerArduino(SPI_CS_PIN, MCP_CAN::MODE_LOOPBACK);
+    canHacker = new CanHackerArduino(SPI_CS_PIN);
+    canHacker->setLoopbackEnabled(true);
     lineReader = new CanHackerArduinoLineReader(canHacker);
     
     attachInterrupt(0, irqHandler, FALLING);

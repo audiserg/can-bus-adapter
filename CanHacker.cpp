@@ -101,10 +101,14 @@ CanHacker::ERROR CanHacker::receiveCommand(const char *buffer, const int length)
             
         case COMMAND_SET_BITRATE:
             return receiveSetBitrateCommand(buffer, length);
-        
-        case COMMAND_SET_BTR:
+            
         case COMMAND_SET_ACR:
-        case COMMAND_SET_AMR: {
+            return receiveSetAcrCommand(buffer, length);
+            
+        case COMMAND_SET_AMR:
+            return receiveSetAmrCommand(buffer, length);
+        
+        case COMMAND_SET_BTR: {
             if (isConnected()) {
                 writeSerial(BEL);
                 return ERROR_CONNECTED;
@@ -236,7 +240,7 @@ CanHacker::ERROR CanHacker::createTransmit(const struct can_frame *frame, char *
         }
     }
     
-    if (timestampEnabled) {
+    if (_timestampEnabled) {
         uint16_t ts = getTimestamp();
         put_hex_byte(buffer + offset, ts >> 8);
         offset += 2;
@@ -263,7 +267,7 @@ CanHacker::ERROR CanHacker::receiveTransmitCommand(const char *buffer, const int
         return ERROR_NOT_CONNECTED;
     }
     
-    if (listenOnly) {
+    if (_listenOnly) {
         return ERROR_LISTEN_ONLY;
     }
     
@@ -287,10 +291,10 @@ CanHacker::ERROR CanHacker::receiveTimestampCommand(const char *buffer, const in
     }
     switch (buffer[1]) {
         case '0':
-            timestampEnabled = false;
+            _timestampEnabled = false;
             return writeSerial(CR);
         case '1':
-            timestampEnabled = true;
+            _timestampEnabled = true;
             return writeSerial(CR);
         default:
             writeSerial(BEL);
@@ -324,6 +328,88 @@ CanHacker::ERROR CanHacker::receiveListenOnlyCommand(const char *buffer, const i
         writeSerial(BEL);
         return ERROR_CONNECTED;
     }
-    listenOnly = true;
+    _listenOnly = true;
     return writeSerial(CR);
+}
+
+CanHacker::ERROR CanHacker::receiveSetAcrCommand(const char *buffer, const int length) {
+    if (length != 9) {
+        writeSerial(BEL);
+        return ERROR_INVALID_COMMAND;
+    }
+    uint32_t id = 0;
+    for (int i=1; i<=8; i++) {
+        id <<= 4;
+        id += hexCharToByte(buffer[i]);
+    }
+    
+    bool beenConnected = isConnected();
+    ERROR error;
+    
+    if (beenConnected) {
+        error = disconnectCan();
+        if (error != ERROR_OK) {
+            return error;
+        }
+    }
+    
+    error = setFilter(id);
+    if (error != ERROR_OK) {
+        return error;
+    }
+    
+    if (beenConnected) {
+        error = connectCan();
+        if (error != ERROR_OK) {
+            return error;
+        }
+    }
+    
+    return writeSerial(CR);
+}
+
+CanHacker::ERROR CanHacker::receiveSetAmrCommand(const char *buffer, const int length) {
+    if (length != 9) {
+        writeSerial(BEL);
+        return ERROR_INVALID_COMMAND;
+    }
+    uint32_t id = 0;
+    for (int i=1; i<=8; i++) {
+        id <<= 4;
+        id += hexCharToByte(buffer[i]);
+    }
+    
+    bool beenConnected = isConnected();
+    ERROR error;
+    
+    if (beenConnected) {
+        error = disconnectCan();
+        if (error != ERROR_OK) {
+            return error;
+        }
+    }
+    
+    error = setFilterMask(id);
+    if (error != ERROR_OK) {
+        return error;
+    }
+    
+    if (beenConnected) {
+        error = connectCan();
+        if (error != ERROR_OK) {
+            return error;
+        }
+    }
+    
+    return writeSerial(CR);
+}
+
+CanHacker::ERROR CanHacker::setLoopbackEnabled(const bool value) {
+    if (isConnected()) {
+        return ERROR_CONNECTED;
+    }
+    
+    _loopback = value;
+    
+    return ERROR_OK;
 }

@@ -35,13 +35,20 @@ class CanHacker {
             ERROR_SERIAL_TX_OVERRUN,
             ERROR_LISTEN_ONLY,
             ERROR_MCP2515_INIT,
+            ERROR_MCP2515_INIT_CONFIG,
+            ERROR_MCP2515_INIT_BITRATE,
+            ERROR_MCP2515_INIT_SET_MODE,
             ERROR_MCP2515_SEND,
-            ERROR_MCP2515_READ
+            ERROR_MCP2515_READ,
+            ERROR_MCP2515_FILTER,
+            ERROR_MCP2515_ERRIF,
+            ERROR_MCP2515_MERRF
         };
         
         ERROR receiveCommand(const char *buffer, const int length);
         ERROR receiveCanFrame(const struct can_frame *frame);
         ERROR sendFrame(const struct can_frame *);
+        ERROR setLoopbackEnabled(const bool value);
 
     private:
     
@@ -68,9 +75,6 @@ class CanHacker {
             COMMAND_LISTEN_ONLY    = 'L'  // switch to listen only mode
         };
     
-        bool timestampEnabled = false;
-        bool listenOnly = false;
-    
         ERROR parseTransmit(const char *buffer, int length, struct can_frame *frame);
         ERROR createTransmit(const struct can_frame *frame, char *buffer, const int length);
         
@@ -80,6 +84,8 @@ class CanHacker {
         virtual ERROR writeCan(const struct can_frame *);
         virtual ERROR writeSerial(const char *buffer);
         virtual uint16_t getTimestamp();
+        virtual ERROR setFilter(const uint32_t filter);
+        virtual ERROR setFilterMask(const uint32_t mask);
         
         virtual ERROR receiveSetBitrateCommand(const char *buffer, const int length);
         ERROR receiveTransmitCommand(const char *buffer, const int length);
@@ -87,12 +93,18 @@ class CanHacker {
         ERROR receiveCloseCommand(const char *buffer, const int length);
         ERROR receiveOpenCommand(const char *buffer, const int length);
         ERROR receiveListenOnlyCommand(const char *buffer, const int length);
+        ERROR receiveSetAcrCommand(const char *buffer, const int length);
+        ERROR receiveSetAmrCommand(const char *buffer, const int length);
         
     protected:
         static const uint16_t TIMESTAMP_LIMIT = 0xEA60;
         
         static const char CR  = '\r';
         static const char BEL = 7;
+        
+        bool _timestampEnabled = false;
+        bool _listenOnly = false;
+        bool _loopback = false;
         
         ERROR writeSerial(const char character);
 };
