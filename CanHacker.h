@@ -1,3 +1,6 @@
+#include <can.h>
+#include <mcp_can.h>
+
 /*
  * CanHacker.h
  *
@@ -28,7 +31,7 @@ class CanHacker {
             ERROR_OK, 
             ERROR_CONNECTED, 
             ERROR_NOT_CONNECTED, 
-            ERROR_UNEXPECTED_COMMAND,
+            ERROR_UNKNOWN_COMMAND,
             ERROR_INVALID_COMMAND,
             ERROR_ERROR_FRAME_NOT_SUPPORTED,
             ERROR_BUFFER_OVERFLOW,
@@ -44,13 +47,33 @@ class CanHacker {
             ERROR_MCP2515_ERRIF,
             ERROR_MCP2515_MERRF
         };
-        
+
+        CanHacker(Stream *stream, Stream *debugStream, uint8_t cs);
+        ~CanHacker();
         ERROR receiveCommand(const char *buffer, const int length);
         ERROR receiveCanFrame(const struct can_frame *frame);
         ERROR sendFrame(const struct can_frame *);
         ERROR setLoopbackEnabled(const bool value);
+        ERROR pollReceiveCan();
+        ERROR receiveCan(const MCP_CAN::RXBn rxBuffer);
+        MCP_CAN *getMcp2515();
+        ERROR processInterrupt();
 
     private:
+
+        static const char CR  = '\r';
+        static const char BEL = 7;
+        static const uint16_t TIMESTAMP_LIMIT = 0xEA60;
+
+        bool _timestampEnabled = false;
+        bool _listenOnly = false;
+        bool _loopback = false;
+        uint8_t _cs;
+        MCP_CAN *mcp2515;
+        CAN_SPEED bitrate;
+        bool _isConnected = false;
+        Stream *_stream;
+        Stream *_debugStream;
     
         enum /*class*/ COMMAND : char {
             COMMAND_SET_BITRATE    = 'S', // set CAN bit rate
@@ -78,16 +101,21 @@ class CanHacker {
         ERROR parseTransmit(const char *buffer, int length, struct can_frame *frame);
         ERROR createTransmit(const struct can_frame *frame, char *buffer, const int length);
         
-        virtual ERROR connectCan();
-        virtual ERROR disconnectCan();
-        virtual bool isConnected();
-        virtual ERROR writeCan(const struct can_frame *);
-        virtual ERROR writeSerial(const char *buffer);
-        virtual uint16_t getTimestamp();
-        virtual ERROR setFilter(const uint32_t filter);
-        virtual ERROR setFilterMask(const uint32_t mask);
+        uint16_t getTimestamp();
+        ERROR setFilter(const uint32_t filter);
+        ERROR setFilterMask(const uint32_t mask);
+
+        ERROR connectCan();
+        ERROR disconnectCan();
+        bool isConnected();
+        ERROR writeCan(const struct can_frame *);
+        ERROR writeStream(const char character);
+        ERROR writeStream(const char *buffer);
+        ERROR writeDebugStream(const char character);
+        ERROR writeDebugStream(const char *buffer);
+        ERROR writeDebugStream(const uint8_t *buffer, size_t size);
         
-        virtual ERROR receiveSetBitrateCommand(const char *buffer, const int length);
+        ERROR receiveSetBitrateCommand(const char *buffer, const int length);
         ERROR receiveTransmitCommand(const char *buffer, const int length);
         ERROR receiveTimestampCommand(const char *buffer, const int length);
         ERROR receiveCloseCommand(const char *buffer, const int length);
@@ -95,30 +123,6 @@ class CanHacker {
         ERROR receiveListenOnlyCommand(const char *buffer, const int length);
         ERROR receiveSetAcrCommand(const char *buffer, const int length);
         ERROR receiveSetAmrCommand(const char *buffer, const int length);
-        
-    protected:
-        static const uint16_t TIMESTAMP_LIMIT = 0xEA60;
-        
-        static const char CR  = '\r';
-        static const char BEL = 7;
-        
-        bool _timestampEnabled = false;
-        bool _listenOnly = false;
-        bool _loopback = false;
-        
-        ERROR writeSerial(const char character);
-};
-
-class CanHackerLineReader {
-    private:
-        static const int COMMAND_MAX_LENGTH = 30; // not including \r\0
-        
-        CanHacker *canHacker;
-        char buffer[COMMAND_MAX_LENGTH + 2];
-        int index;
-    public:
-        CanHackerLineReader(CanHacker *vCanHacker);
-        CanHacker::ERROR processChar(char rxChar);
 };
 
 #endif /* CANHACKER_H_ */
