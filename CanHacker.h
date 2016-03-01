@@ -58,6 +58,7 @@ class CanHacker {
         ERROR receiveCan(const MCP_CAN::RXBn rxBuffer);
         MCP_CAN *getMcp2515();
         ERROR processInterrupt();
+        Stream *getInterfaceStream();
 
     private:
 
@@ -113,6 +114,7 @@ class CanHacker {
         ERROR writeStream(const char *buffer);
         ERROR writeDebugStream(const char character);
         ERROR writeDebugStream(const char *buffer);
+        ERROR writeDebugStream(const int buffer);
         ERROR writeDebugStream(const uint8_t *buffer, size_t size);
         
         ERROR receiveSetBitrateCommand(const char *buffer, const int length);

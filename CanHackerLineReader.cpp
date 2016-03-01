@@ -1,8 +1,7 @@
 #include "CanHackerLineReader.h"
 
-CanHackerLineReader::CanHackerLineReader(Stream *stream, CanHacker *vCanHacker) {
-    _stream = stream;
-    canHacker = vCanHacker;
+CanHackerLineReader::CanHackerLineReader(CanHacker *vCanHacker) {
+    _canHacker = vCanHacker;
     index = 0;
     memset(buffer, 0, sizeof(buffer));
 }
@@ -14,7 +13,7 @@ CanHacker::ERROR CanHackerLineReader::processChar(char rxChar) {
             if (index > 0) {
                 buffer[index] = '\0';
             
-                CanHacker::ERROR error = canHacker->receiveCommand(buffer, index);
+                CanHacker::ERROR error = _canHacker->receiveCommand(buffer, index);
                 index = 0;
                 if (error != CanHacker::ERROR_OK) {
                     return error;
@@ -38,8 +37,9 @@ CanHacker::ERROR CanHackerLineReader::processChar(char rxChar) {
 }
 
 CanHacker::ERROR CanHackerLineReader::process() {
-    while (_stream->available()) {
-        CanHacker::ERROR error = processChar(_stream->read());
+    Stream *stream = _canHacker->getInterfaceStream();
+    while (stream->available()) {
+        CanHacker::ERROR error = processChar(stream->read());
         if (error != CanHacker::ERROR_OK) {
             return error;
         }

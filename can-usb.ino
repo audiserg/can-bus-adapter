@@ -8,8 +8,8 @@
 
 const int SPI_CS_PIN = 10;
 
-const int SS_RX_PIN = 5;
-const int SS_TX_PIN = 4;
+const int SS_RX_PIN = 2;
+const int SS_TX_PIN = 3;
 
 bool interrupt = false;
 
@@ -21,7 +21,7 @@ SoftwareSerial softwareSerial(SS_RX_PIN, SS_TX_PIN);
 void setup() {
     Serial.begin(115200);
     SPI.begin();
-    softwareSerial.begin(38400);
+    softwareSerial.begin(115200);
 
     Stream *interfaceStream = &Serial;
     Stream *debugStream = &softwareSerial;
@@ -29,17 +29,21 @@ void setup() {
     
     canHacker = new CanHacker(interfaceStream, debugStream, SPI_CS_PIN);
     canHacker->setLoopbackEnabled(true);
-    lineReader = new CanHackerLineReader(interfaceStream, canHacker);
+    lineReader = new CanHackerLineReader(canHacker);
     
     attachInterrupt(0, irqHandler, FALLING);
 }
 
 void loop() {
     if (interrupt) {
-        interrupt = false;
         CanHacker::ERROR error = canHacker->processInterrupt();
         handleError(error);
+        if (error == CanHacker::ERROR_OK) {
+            interrupt = false;
+        }
     }
+
+    canHacker->getMcp2515()->clearRXnOVR();
 }
 
 void serialEvent() {
@@ -65,9 +69,9 @@ void handleError(const CanHacker::ERROR error) {
             break;
     }
   
-    Serial.print("Failure (code ");
-    Serial.print((int)error);
-    Serial.println(")");
+    softwareSerial.print("Failure (code ");
+    softwareSerial.print((int)error);
+    softwareSerial.println(")");
 
     digitalWrite(SPI_CS_PIN, HIGH);
     pinMode(LED_BUILTIN, OUTPUT);

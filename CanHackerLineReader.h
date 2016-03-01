@@ -7,12 +7,12 @@ class CanHackerLineReader {
     private:
         static const int COMMAND_MAX_LENGTH = 30; // not including \r\0
         
-        CanHacker *canHacker;
+        CanHacker *_canHacker;
         char buffer[COMMAND_MAX_LENGTH + 2];
         int index;
         Stream *_stream;
     public:
-        CanHackerLineReader(Stream *stream, CanHacker *vCanHacker);
+        CanHackerLineReader(CanHacker *vCanHacker);
         CanHacker::ERROR processChar(char rxChar);
         CanHacker::ERROR process();
 };
