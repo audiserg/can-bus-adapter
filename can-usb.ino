@@ -12,8 +12,6 @@ const int INT_PIN = 2;
 const int SS_RX_PIN = 3;
 const int SS_TX_PIN = 4;
 
-bool interrupt = false;
-
 CanHackerLineReader *lineReader = NULL;
 CanHacker *canHacker = NULL;
 
@@ -39,9 +37,6 @@ void loop() {
     if (digitalRead(INT_PIN) == LOW) {
         CanHacker::ERROR error = canHacker->processInterrupt();
         handleError(error);
-        if (error == CanHacker::ERROR_OK) {
-            interrupt = false;
-        }
     }
 }
 
