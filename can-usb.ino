@@ -7,9 +7,10 @@
 #include "CanHackerLineReader.h"
 
 const int SPI_CS_PIN = 10;
+const int INT_PIN = 2;
 
-const int SS_RX_PIN = 2;
-const int SS_TX_PIN = 3;
+const int SS_RX_PIN = 3;
+const int SS_TX_PIN = 4;
 
 bool interrupt = false;
 
@@ -31,28 +32,22 @@ void setup() {
     canHacker->setLoopbackEnabled(true);
     lineReader = new CanHackerLineReader(canHacker);
     
-    attachInterrupt(0, irqHandler, FALLING);
+    pinMode(INT_PIN, INPUT);
 }
 
 void loop() {
-    if (interrupt) {
+    if (digitalRead(INT_PIN) == LOW) {
         CanHacker::ERROR error = canHacker->processInterrupt();
         handleError(error);
         if (error == CanHacker::ERROR_OK) {
             interrupt = false;
         }
     }
-
-    canHacker->getMcp2515()->clearRXnOVR();
 }
 
 void serialEvent() {
     CanHacker::ERROR error = lineReader->process();
     handleError(error);
-}
-
-void irqHandler() {
-    interrupt = true;
 }
 
 void handleError(const CanHacker::ERROR error) {
