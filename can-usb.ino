@@ -1,10 +1,13 @@
+#include <can.h>
+#include <mcp2515.h>
+
+#include <CanHacker.h>
+#include <CanHackerLineReader.h>
+#include <lib.h>
+
 #include <SPI.h>
 #include <mcp_can.h>
 #include <SoftwareSerial.h>
-
-#include "lib.h"
-#include "CanHacker.h"
-#include "CanHackerLineReader.h"
 
 const int SPI_CS_PIN = 10;
 const int INT_PIN = 2;
