@@ -6,7 +6,6 @@
 #include <lib.h>
 
 #include <SPI.h>
-#include <mcp_can.h>
 #include <SoftwareSerial.h>
 
 const int SPI_CS_PIN = 10;
