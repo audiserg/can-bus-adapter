@@ -21,6 +21,7 @@ SoftwareSerial softwareSerial(SS_RX_PIN, SS_TX_PIN);
 
 void setup() {
     Serial.begin(115200);
+    while (!Serial);
     SPI.begin();
     softwareSerial.begin(115200);
 
@@ -29,21 +30,21 @@ void setup() {
     
     
     canHacker = new CanHacker(interfaceStream, debugStream, SPI_CS_PIN);
-    canHacker->setLoopbackEnabled(true);
+    canHacker->enableLoopback();
     lineReader = new CanHackerLineReader(canHacker);
     
     pinMode(INT_PIN, INPUT);
 }
 
 void loop() {
+    CanHacker::ERROR error;
+  
     if (digitalRead(INT_PIN) == LOW) {
-        CanHacker::ERROR error = canHacker->processInterrupt();
+        error = canHacker->processInterrupt();
         handleError(error);
     }
-}
 
-void serialEvent() {
-    CanHacker::ERROR error = lineReader->process();
+    error = lineReader->process();
     handleError(error);
 }
 
