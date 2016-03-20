@@ -30,7 +30,7 @@ void setup() {
     
     
     canHacker = new CanHacker(interfaceStream, debugStream, SPI_CS_PIN);
-    canHacker->enableLoopback();
+    //canHacker->enableLoopback(); // uncomment this for loopback
     lineReader = new CanHackerLineReader(canHacker);
     
     pinMode(INT_PIN, INPUT);
